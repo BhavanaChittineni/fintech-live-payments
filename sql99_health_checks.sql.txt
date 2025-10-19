@@ -1,0 +1,86 @@
+-- =============================================================================
+-- HEALTH CHECKS (run anytime)
+-- Purpose: confirm ingestion health, row growth, and recent files
+-- =============================================================================
+
+USE ROLE ACCOUNTADMIN;
+USE WAREHOUSE FINTECH_WH;
+USE DATABASE FINTECH_DB;
+
+-- 1) RAW table basics
+SELECT COUNT(*) AS rows_raw
+FROM FINTECH_DB.RAW.TRANSACTIONS_RAW;
+
+DESCRIBE TABLE FINTECH_DB.RAW.TRANSACTIONS_RAW;
+
+SELECT TXN_ID, TXN_TS_UTC, INGESTED_AT, STATUS
+FROM FINTECH_DB.RAW.TRANSACTIONS_RAW
+ORDER BY INGESTED_AT DESC
+LIMIT 10;
+
+-- Last 5–10 minute activity in RAW
+SELECT COUNT(*) AS rows_last_5min
+FROM FINTECH_DB.RAW.TRANSACTIONS_RAW
+WHERE INGESTED_AT >= DATEADD(minute, -5, CURRENT_TIMESTAMP());
+
+SELECT DATE_TRUNC('minute', INGESTED_AT) AS minute_bucket,
+       COUNT(*) AS row_count
+FROM FINTECH_DB.RAW.TRANSACTIONS_RAW
+WHERE INGESTED_AT >= DATEADD(minute, -10, CURRENT_TIMESTAMP())
+GROUP BY 1
+ORDER BY 1 DESC;
+
+-- 2) PIPE status (edit pipe name below if yours differs)
+SELECT
+  PARSE_JSON(SYSTEM$PIPE_STATUS('FINTECH_DB.RAW.TRX_PIPE')):"executionState"::string         AS exec_state,
+  PARSE_JSON(SYSTEM$PIPE_STATUS('FINTECH_DB.RAW.TRX_PIPE')):"lastIngestedFilePath"::string   AS last_file,
+  PARSE_JSON(SYSTEM$PIPE_STATUS('FINTECH_DB.RAW.TRX_PIPE')):"lastIngestedTimestamp"::timestamp AS last_ingested_utc,
+  PARSE_JSON(SYSTEM$PIPE_STATUS('FINTECH_DB.RAW.TRX_PIPE')):"lastReceivedMessageTimestamp"::timestamp AS last_msg_utc;
+
+-- Friendly timezone views of the last ingest (optional)
+SELECT
+  PARSE_JSON(SYSTEM$PIPE_STATUS('FINTECH_DB.RAW.TRX_PIPE')):"lastIngestedFilePath"::string AS last_file,
+  PARSE_JSON(SYSTEM$PIPE_STATUS('FINTECH_DB.RAW.TRX_PIPE')):"lastIngestedTimestamp"::timestamp AS last_ingested_utc,
+  CONVERT_TIMEZONE('UTC','Asia/Kolkata',
+    PARSE_JSON(SYSTEM$PIPE_STATUS('FINTECH_DB.RAW.TRX_PIPE')):"lastIngestedTimestamp"::timestamp) AS last_ingested_ist,
+  CONVERT_TIMEZONE('UTC','America/Chicago',
+    PARSE_JSON(SYSTEM$PIPE_STATUS('FINTECH_DB.RAW.TRX_PIPE')):"lastIngestedTimestamp"::timestamp) AS last_ingested_ct;
+
+-- 3) Recent file loads (COPY_HISTORY)
+-- Past 60 minutes, most recent first
+SELECT FILE_NAME, STATUS, ROW_COUNT, ERROR_COUNT, LAST_LOAD_TIME
+FROM TABLE(FINTECH_DB.INFORMATION_SCHEMA.COPY_HISTORY(
+  TABLE_NAME => 'RAW.TRANSACTIONS_RAW',
+  START_TIME => DATEADD(minute, -60, CURRENT_TIMESTAMP())
+))
+ORDER BY LAST_LOAD_TIME DESC;
+
+-- 4) SILVER/GOLD growth checks
+SELECT COUNT(*) AS rows_silver
+FROM FINTECH_DB.SILVER.V_TRANSACTIONS_CLEAN;
+
+SELECT DATE_TRUNC('minute', INGESTED_AT) AS minute_bucket,
+       COUNT(*) AS rows_last_10m
+FROM FINTECH_DB.SILVER.V_TRANSACTIONS_CLEAN
+WHERE INGESTED_AT >= DATEADD(minute, -10, CURRENT_TIMESTAMP())
+GROUP BY 1
+ORDER BY 1 DESC;
+
+-- GOLD KPIs snapshot (should react as data flows)
+SELECT * FROM FINTECH_DB.GOLD.V_KPIS_60M;
+
+-- 5) Environment id (handy for screenshots)
+SELECT SYSTEM$GET_ACCOUNT_IDENTIFIER() AS account_identifier,
+       CURRENT_REGION()                 AS snowflake_region;
+
+-----or another way just easy sql health checks
+----PHASE 3 — “Health” one-liners (run anytime)
+SELECT PARSE_JSON(SYSTEM$PIPE_STATUS('FINTECH_DB.RAW.TRX_PIPE')):"executionState"::string AS state, PARSE_JSON(SYSTEM$PIPE_STATUS('FINTECH_DB.RAW.TRX_PIPE')):"lastIngestedTimestamp"::timestamp AS last_ingested_utc; -- pipe running + last ingest
+
+SELECT COUNT(*) AS rows_raw FROM FINTECH_DB.RAW.TRANSACTIONS_RAW; -- raw growth
+
+SELECT COUNT(*) AS rows_silver FROM FINTECH_DB.SILVER.V_TRANSACTIONS_CLEAN; -- clean growth
+
+SELECT DATE_TRUNC('minute', INGESTED_AT) AS minute_bucket, COUNT(*) AS row_count FROM FINTECH_DB.SILVER.V_TRANSACTIONS_CLEAN WHERE INGESTED_AT >= DATEADD('minute', -10, CURRENT_TIMESTAMP()) GROUP BY 1 ORDER BY 1 DESC; -- last 10m ingest
+
+SELECT FILE_NAME, ROW_COUNT, LAST_LOAD_TIME FROM TABLE(INFORMATION_SCHEMA.COPY_HISTORY(TABLE_NAME=>'FINTECH_DB.RAW.TRANSACTIONS_RAW', START_TIME=>DATEADD('minute',-60,CURRENT_TIMESTAMP()))) ORDER BY LAST_LOAD_TIME DESC; -- recent file loads

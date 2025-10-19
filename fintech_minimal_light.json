@@ -1,0 +1,106 @@
+
+{
+  "name": "Fintech Live Dark",
+  "dataColors": [
+    "#37c5ab",  // teal (primary)
+    "#7aa2f7",  // indigo (secondary / avg line)
+    "#22d3ee",  // cyan
+    "#f59e0b",  // amber
+    "#ef4444",  // red (declined)
+    "#a1a1aa"   // gray spare
+  ],
+  "background": "#0b0f1a",
+  "foreground": "#e6edf3",
+  "tableAccent": "#37c5ab",
+
+  "visualStyles": {
+    "*": {
+      "*": {
+        "background": [ { "color": { "solid": { "color": "#0b0f1a" } } } ],
+        "title": [
+          { "show": true },
+          { "fontColor": { "solid": { "color": "#e6edf3" } } }
+        ]
+      }
+    },
+
+    "card": {
+      "*": {
+        "categoryLabels": [
+          { "show": true },
+          { "color": { "solid": { "color": "#9aa4b2" } } },
+          { "fontSize": 12 }
+        ],
+        "labels": [
+          { "color": { "solid": { "color": "#e6edf3" } } },
+          { "fontSize": 20 }
+        ],
+        "calloutValue": [
+          { "color": { "solid": { "color": "#e6edf3" } } },
+          { "fontSize": 28 }
+        ],
+        "background": [ { "color": { "solid": { "color": "#111627" } } } ]
+      }
+    },
+
+    "lineChart": {
+      "*": {
+        "legend": [ { "show": false } ],
+        "categoryAxis": [
+          { "showAxisTitle": true },
+          { "labelColor": { "solid": { "color": "#9aa4b2" } } },
+          { "titleColor": { "solid": { "color": "#9aa4b2" } } },
+          { "gridlineColor": { "solid": { "color": "#263042" } } }
+        ],
+        "valueAxis": [
+          { "showAxisTitle": true },
+          { "labelColor": { "solid": { "color": "#9aa4b2" } } },
+          { "titleColor": { "solid": { "color": "#9aa4b2" } } },
+          { "gridlineColor": { "solid": { "color": "#263042" } } }
+        ],
+        "dataLabels": [ { "show": false } ],
+        "markers": [ { "show": false } ],
+        "plotArea": [ { "transparency": 0 } ],
+        "background": [ { "color": { "solid": { "color": "#0b0f1a" } } } ]
+      }
+    },
+
+    "clusteredBarChart": {
+      "*": {
+        "dataLabels": [
+          { "show": true },
+          { "color": { "solid": { "color": "#e6edf3" } } },
+          { "displayUnits": "Auto" }
+        ],
+        "categoryAxis": [
+          { "labelColor": { "solid": { "color": "#e6edf3" } } },
+          { "showAxisTitle": false }
+        ],
+        "valueAxis": [
+          { "labelColor": { "solid": { "color": "#9aa4b2" } } },
+          { "showAxisTitle": false },
+          { "gridlineColor": { "solid": { "color": "#263042" } } }
+        ],
+        "background": [ { "color": { "solid": { "color": "#111627" } } } ]
+      }
+    },
+
+    "pieChart": {
+      "*": {
+        "legend": [
+          { "show": true },
+          { "position": "Right" },
+          { "titleText": "" },
+          { "labelColor": { "solid": { "color": "#e6edf3" } } },
+          { "fontSize": 12 }
+        ],
+        "detailLabels": [
+          { "show": true },
+          { "labelStyle": "Category, percent of total" },
+          { "color": { "solid": { "color": "#e6edf3" } } }
+        ],
+        "background": [ { "color": { "solid": { "color": "#111627" } } } ]
+      }
+    }
+  }
+}
